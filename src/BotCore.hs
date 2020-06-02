@@ -83,6 +83,21 @@ data Telegram = Telegram
   } deriving (Generic, ToJSON, FromJSON)
 
 
+data SendMessage = SendMessage
+  { sendmessage_chat_id :: Int
+  , sendmessage_reply_to_message_id :: Int
+  , sendmessage_text :: String
+  , sendmessage_disable_web_page_preview :: Bool
+  } deriving (Generic)
+
+instance ToJSON SendMessage where
+  toJSON = genericToJSON defaultOptions
+    { fieldLabelModifier = dropPrefix "sendmessage_" }
+
+instance FromJSON SendMessage where
+  parseJSON = genericParseJSON defaultOptions
+    { fieldLabelModifier = dropPrefix "sendmessage_" }
+
 dropPrefix :: String -> String -> String
 dropPrefix prefix str = drop (length prefix) str
 
@@ -94,6 +109,13 @@ getToken = do
 
 api :: String -> String -> String
 api token method = "https://api.telegram.org/bot" ++ token ++ method
+
+
+sendMessage :: SendMessage -> IO ()
+sendMessage message = do
+  token <- getToken
+  _ <- post (api token "/sendMessage") (toJSON message)
+  return ()
 
 
 bot :: Update -> IO ()

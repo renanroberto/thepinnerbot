@@ -25,7 +25,7 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      BotCore
   other-modules:
       Paths_thepinnerbot
   hs-source-dirs:

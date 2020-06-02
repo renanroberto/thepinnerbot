@@ -85,9 +85,7 @@ data Telegram = Telegram
 
 data SendMessage = SendMessage
   { sendmessage_chat_id :: Int
-  , sendmessage_reply_to_message_id :: Int
   , sendmessage_text :: String
-  , sendmessage_disable_web_page_preview :: Bool
   } deriving (Generic)
 
 instance ToJSON SendMessage where

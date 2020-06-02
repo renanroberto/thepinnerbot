@@ -21,6 +21,7 @@ import Data.Aeson
 data Chat = Chat
   { chat_id :: Int
   , chat_type :: String
+  , chat_username :: Maybe String
   } deriving (Generic, Show)
 
 instance ToJSON Chat where
@@ -52,6 +53,7 @@ data Message = Message
   , message_date :: Int
   , message_chat :: Chat
   , message_text :: Maybe String
+  , message_pinned_message :: Maybe Message
   } deriving (Generic, Show)
 
 instance ToJSON Message where
@@ -84,7 +86,7 @@ data Telegram = Telegram
 
 
 data SendMessage = SendMessage
-  { sendmessage_chat_id :: Int
+  { sendmessage_chat_id :: String
   , sendmessage_text :: String
   } deriving (Generic)
 
@@ -109,6 +111,17 @@ api :: String -> String -> String
 api token method = "https://api.telegram.org/bot" ++ token ++ method
 
 
+redirectPinnedMessage :: Message -> SendMessage
+redirectPinnedMessage message =
+  let
+    channel = "@testpinnerchannel"
+    chat = "testpinnergroup"
+    message_id = message_message_id message
+  in
+    SendMessage channel $
+      "https://t.me/" ++ chat ++ "/" ++ show message_id
+
+
 sendMessage :: SendMessage -> IO ()
 sendMessage message = do
   token <- getToken
@@ -116,8 +129,13 @@ sendMessage message = do
   return ()
 
 
+-- TODO: Make work only in rustjerk
 bot :: Update -> IO ()
 bot update =
   case update_message update of
     Nothing -> return ()
-    Just message -> return ()
+    Just message ->
+      case message_pinned_message message of
+        Nothing -> return ()
+        Just pinned_message ->
+          (sendMessage . redirectPinnedMessage) pinned_message

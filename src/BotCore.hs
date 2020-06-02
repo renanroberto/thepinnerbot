@@ -5,6 +5,7 @@ module BotCore (bot, Update) where
 import GHC.Generics
 import System.Environment (lookupEnv)
 import Data.Maybe (fromMaybe)
+import Control.Monad ((<=<))
 import Network.Wreq (post)
 import Data.Aeson
   ( ToJSON
@@ -111,15 +112,24 @@ api :: String -> String -> String
 api token method = "https://api.telegram.org/bot" ++ token ++ method
 
 
-redirectPinnedMessage :: Message -> SendMessage
+getChatChannel :: Int -> Maybe (String, String)
+getChatChannel id_ = lookup id_ table
+  where table =
+          [ (-1001169386594, ("testpinnergroup", "@testpinnerchannel"))
+          , (0, ("test", "@test"))
+          ]
+
+redirectPinnedMessage :: Message -> Maybe SendMessage
 redirectPinnedMessage message =
   let
-    channel = "@testpinnerchannel"
-    chat = "testpinnergroup"
+    chatChannel = (getChatChannel . chat_id . message_chat) message
     message_id = message_message_id message
   in
-    SendMessage channel $
-      "https://t.me/" ++ chat ++ "/" ++ show message_id
+    case chatChannel of
+      Nothing -> Nothing
+      Just (chat, channel) ->
+        Just $ SendMessage channel
+          ("https://t.me/" ++ chat ++ "/" ++ show message_id)
 
 
 sendMessage :: SendMessage -> IO ()
@@ -138,4 +148,6 @@ bot update =
       case message_pinned_message message of
         Nothing -> return ()
         Just pinned_message ->
-          (sendMessage . redirectPinnedMessage) pinned_message
+          case redirectPinnedMessage pinned_message of
+            Nothing -> return ()
+            Just msg -> sendMessage msg

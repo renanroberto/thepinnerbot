@@ -5,7 +5,6 @@ module BotCore (bot, Update) where
 import GHC.Generics
 import System.Environment (lookupEnv)
 import Data.Maybe (fromMaybe)
-import Control.Monad ((<=<))
 import Network.Wreq (post)
 import Data.Aeson
   ( ToJSON
@@ -34,23 +33,8 @@ instance FromJSON Chat where
     { fieldLabelModifier = dropPrefix "chat_" }
 
 
-data User = User
-  { user_id :: Int
-  , user_first_name :: String
-  } deriving (Generic, Show)
-
-instance ToJSON User where
-  toJSON = genericToJSON defaultOptions
-    { fieldLabelModifier = dropPrefix "user_" }
-
-instance FromJSON User where
-  parseJSON = genericParseJSON defaultOptions
-    { fieldLabelModifier = dropPrefix "user_" }
-
-
 data Message = Message
   { message_message_id :: Int
-  , message_from :: Maybe User
   , message_date :: Int
   , message_chat :: Chat
   , message_text :: Maybe String
@@ -112,24 +96,21 @@ api :: String -> String -> String
 api token method = "https://api.telegram.org/bot" ++ token ++ method
 
 
-getChatChannel :: Int -> Maybe (String, String)
-getChatChannel id_ = lookup id_ table
+getChannel :: Chat -> Maybe String
+getChannel chat = lookup (chat_id chat) table
   where table =
-          [ (-1001169386594, ("testpinnergroup", "@testpinnerchannel"))
-          , (-1001313149703, ("rustjerkbr", "@rustquotesbr"))
+          [ (-1001169386594, "@testpinnerchannel")
+          , (-1001313149703, "@rustquotesbr")
           ]
 
 redirectPinnedMessage :: Message -> Maybe SendMessage
-redirectPinnedMessage message =
-  let
-    chatChannel = (getChatChannel . chat_id . message_chat) message
-    message_id = message_message_id message
-  in
-    case chatChannel of
-      Nothing -> Nothing
-      Just (chat, channel) ->
-        Just $ SendMessage channel
-          ("https://t.me/" ++ chat ++ "/" ++ show message_id)
+redirectPinnedMessage message = do
+  let messageId = message_message_id message
+  let chat = message_chat message
+  channel <- getChannel chat
+  chatUsername <- chat_username chat
+  return $ SendMessage channel
+    ("https://t.me/" ++ chatUsername ++ "/" ++ show messageId)
 
 
 sendMessage :: SendMessage -> IO ()

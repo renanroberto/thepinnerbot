@@ -116,7 +116,7 @@ getChatChannel :: Int -> Maybe (String, String)
 getChatChannel id_ = lookup id_ table
   where table =
           [ (-1001169386594, ("testpinnergroup", "@testpinnerchannel"))
-          , (0, ("test", "@test"))
+          , (-1001313149703, ("rustjerkbr", "@rustquotesbr"))
           ]
 
 redirectPinnedMessage :: Message -> Maybe SendMessage
@@ -139,7 +139,6 @@ sendMessage message = do
   return ()
 
 
--- TODO: Make work only in rustjerk
 bot :: Update -> IO ()
 bot update =
   case update_message update of

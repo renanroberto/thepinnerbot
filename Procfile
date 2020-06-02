@@ -1,1 +1,1 @@
-web: whatsyourquestion-bot-exe
+web: thepinnerbot-exe

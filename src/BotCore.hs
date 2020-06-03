@@ -119,15 +119,14 @@ sendMessage message = do
   _ <- post (api token "/sendMessage") (toJSON message)
   return ()
 
+core :: Update -> Maybe SendMessage
+core update = pure update
+  >>= update_message
+  >>= message_pinned_message
+  >>= redirectPinnedMessage
 
 bot :: Update -> IO ()
 bot update =
-  case update_message update of
+  case core update of
     Nothing -> return ()
-    Just message ->
-      case message_pinned_message message of
-        Nothing -> return ()
-        Just pinned_message ->
-          case redirectPinnedMessage pinned_message of
-            Nothing -> return ()
-            Just msg -> sendMessage msg
+    Just msg -> sendMessage msg
